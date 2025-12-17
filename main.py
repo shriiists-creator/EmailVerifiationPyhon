@@ -1,73 +1,85 @@
-# e:/Email Verifaction/main.py
-import json
+import csv
+import os
+import sys
 import time
 import openpyxl
 from openpyxl.styles import PatternFill
 from verifier import EmailVerifier
-import config
 
 INPUT_FILE = 'emails_input.txt'
-OUTPUT_FILE = 'emails_output.xlsx'
-RATE_LIMIT_DELAY = 1 # seconds to wait between checks
+OUTPUT_TXT = 'emails_output.txt'
+OUTPUT_CSV = 'emails_output.csv'
+OUTPUT_XLSX = 'emails_output.xlsx'
+RATE_LIMIT = 1.0
+
+def get_status(result):
+    """Maps verifier result to VALID, INVALID, or UNKNOWN."""
+    if isinstance(result, dict):
+        s = result.get('status', 'UNKNOWN').upper()
+    else:
+        s = str(result).upper()
+    
+    if s == 'VALID':
+        return 'VALID'
+    elif s in ('INVALID', 'NO-MX', 'SPAMTRAP', 'ABUSE', 'DISPOSABLE'):
+        return 'INVALID'
+    else:
+        return 'UNKNOWN'
 
 def main():
-    """
-    Main function to run the email verification process.
-    """
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    input_path = os.path.join(base_dir, INPUT_FILE)
+    
+    if not os.path.exists(input_path):
+        print(f"Error: {INPUT_FILE} not found.")
+        sys.exit(1)
+
+    with open(input_path, 'r', encoding='utf-8') as f:
+        emails = [line.strip() for line in f if line.strip()]
+
+    if not emails:
+        print("No emails to verify.")
+        sys.exit(0)
+
     try:
-        with open(INPUT_FILE, 'r', encoding='utf-8') as f:
-            emails_to_verify = [line.strip() for line in f if line.strip()]
-    except FileNotFoundError:
-        print(f"Error: Input file '{INPUT_FILE}' not found.")
-        print("Please create it and add one email per line.")
-        return
+        verifier = EmailVerifier(enable_whois=False)
+    except TypeError:
+        verifier = EmailVerifier()
 
-    # Initialize the verifier
-    # Set enable_whois=True for domain age check (slower)
-    verifier = EmailVerifier(enable_whois=config.ENABLE_WHOIS)
+    print(f"Starting verification for {len(emails)} emails...")
 
-    print(f"Starting verification for {len(emails_to_verify)} emails from '{INPUT_FILE}'...")
-
-    # Initialize Excel Workbook
     wb = openpyxl.Workbook()
     ws = wb.active
-    # Define red fill for VALID rows
+    ws.append(['Email', 'Status'])
     red_fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")
-    headers = []
 
-    try:
-        for i, email in enumerate(emails_to_verify):
-            print(f"[{i+1}/{len(emails_to_verify)}] Verifying: {email}")
+    csv_path = os.path.join(base_dir, OUTPUT_CSV)
+    txt_path = os.path.join(base_dir, OUTPUT_TXT)
+    xlsx_path = os.path.join(base_dir, OUTPUT_XLSX)
+
+    with open(csv_path, 'w', newline='', encoding='utf-8') as f_csv, \
+         open(txt_path, 'w', encoding='utf-8') as f_txt:
+        
+        writer = csv.writer(f_csv)
+        writer.writerow(['Email', 'Status'])
+
+        for i, email in enumerate(emails, 1):
+            print(f"[{i}/{len(emails)}] Verifying: {email}")
             result = verifier.verify(email)
-            
-            # Write headers based on the first result
-            if i == 0:
-                headers = list(result.keys())
-                ws.append(headers)
+            status = get_status(result)
 
-            # Write row data
-            row_values = [str(result.get(h, '')) for h in headers]
-            ws.append(row_values)
+            writer.writerow([email, status])
+            f_txt.write(f"{email}: {status}\n")
 
-            # Apply formatting for VALID status
-            if result.get('status') == 'VALID':
-                for cell in ws[ws.max_row]:
-                    cell.fill = red_fill
+            ws.append([email, status])
+            if status in ('INVALID', 'UNKNOWN'):
+                cell = ws.cell(row=ws.max_row, column=2)
+                cell.fill = red_fill
 
-            # Save every 50 emails
-            if (i + 1) % 50 == 0:
-                print(f"Saving progress to '{OUTPUT_FILE}'...")
-                wb.save(OUTPUT_FILE)
+            time.sleep(RATE_LIMIT)
 
-            time.sleep(RATE_LIMIT_DELAY)
-
-    except Exception as e:
-        print(f"\nAn error occurred during processing: {e}")
-    finally:
-        # Final save (runs even if error occurs)
-        if len(emails_to_verify) > 0:
-            wb.save(OUTPUT_FILE)
-            print(f"\nResults saved to '{OUTPUT_FILE}'.")
+    wb.save(xlsx_path)
+    print("Verification complete.")
 
 if __name__ == "__main__":
     main()
