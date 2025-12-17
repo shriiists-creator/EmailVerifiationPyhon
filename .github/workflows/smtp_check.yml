@@ -23,3 +23,12 @@ jobs:
 
       - name: Run email verification
         run: python main.py
+
+      - name: Upload output files
+        uses: actions/upload-artifact@v4
+        with:
+          name: email-verification-output
+          path: |
+            emails_output.txt
+            emails_output.csv
+            emails_output.xlsx
