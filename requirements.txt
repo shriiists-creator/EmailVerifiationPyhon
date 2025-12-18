@@ -1,6 +1,2 @@
 dnspython
-python-whois
-dnspython
-pandas
 openpyxl
-

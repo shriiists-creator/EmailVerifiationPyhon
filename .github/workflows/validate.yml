@@ -1,0 +1,38 @@
+name: Email Validation
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  validate-emails:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run email validation
+        run: python main.py
+      
+      - name: Upload validation results
+        uses: actions/upload-artifact@v3
+        with:
+          name: validation-results
+          path: |
+            emails_output.txt
+            emails_output.csv
+            emails_output.xlsx

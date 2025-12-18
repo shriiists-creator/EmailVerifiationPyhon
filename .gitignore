@@ -1,50 +1,29 @@
-# Credentials - Never commit these!
-credentials.json
-*.json
-
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
 
-# Virtual Environment
+# Virtual environments
 venv/
+.venv/
 env/
 ENV/
-.venv
 
-# IDEs
+# Output files
+emails_output.txt
+emails_output.csv
+emails_output.xlsx
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
+# Credentials (if any were added)
+credentials.json
+*.json

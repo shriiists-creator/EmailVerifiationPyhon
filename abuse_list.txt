@@ -1,3 +1,0 @@
-# Add specific known abusive email addresses here, one per line.
-# For example:
-# bad-actor@some-domain.com
